@@ -46,24 +46,8 @@ class MemoryBucket{
     static void initMemoryPool();
     static MemoryPool& getMemoryPool(int index);
 
-    static void* useMemory(size_t size)
-    {
-        assert(size>=0&&"size must greater than or equal zero!");
-        if(!size) return nullptr;
-        //else if(size>=MAX_SLOT_SIZE) new(size);报错
-        else if(size>MAX_SLOT_SIZE) return operator new(size);
-        return getMemoryPool((size+7)/BASE_SLOT_SIZE-1).allocate();
-    }
-    static void freeMemory(void* ptr,size_t size)
-    {
-        if(!ptr) return ;
-        else if(size>MAX_SLOT_SIZE) 
-        {
-            operator delete(ptr);
-            return ;
-        }
-        getMemoryPool((size+7)/BASE_SLOT_SIZE-1).deallocate(ptr);
-    }
+    static void* useMemory(size_t size);
+    static void freeMemory(void* ptr,size_t size);
     template<typename T,typename... Args>
     friend T* newElement(Args&&... args);
     template<typename T>
