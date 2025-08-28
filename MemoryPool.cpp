@@ -93,9 +93,10 @@ bool MemoryPool::pushFreelist(slot* p)
 
 slot* MemoryPool::popFreelist()
 {
-   while(true)
-   {
-        slot* oldHead = freeslot.load(std::memory_order_acquire);
+    std::lock_guard<std::mutex>lock(popList_mtx);
+    slot* oldHead = freeslot.load(std::memory_order_acquire);
+    while(true)
+    {
         if(!oldHead) return nullptr;
         slot* newHead = nullptr;
         try
@@ -107,7 +108,7 @@ slot* MemoryPool::popFreelist()
             continue;
         }
         if(freeslot.compare_exchange_strong(oldHead,newHead)) return oldHead;
-   }
+    }
 }
 
 void MemoryBucket::initMemoryPool()

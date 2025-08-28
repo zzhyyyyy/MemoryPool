@@ -38,6 +38,7 @@ class MemoryPool{
     // Attention:freeslot指向的是被释放的slot,对于多个线程可能会同时释放，所以需要原子操作
     std::atomic<slot*>freeslot;//当前block中使用过但已经被释放了的内存槽(可重新使用)
     std::mutex mtx;//用来控制线程使用槽的分配
+    std::mutex popList_mtx;
 };
 
 //实现对不同size_t内存槽的映射

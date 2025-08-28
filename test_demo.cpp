@@ -6,7 +6,7 @@
 #include <mutex>
 #include "MemoryPool.cpp"
 
-
+std::atomic<size_t>New_Time,MemoryPool_Time;
 // 测试用例
 class P1 
 {
@@ -32,7 +32,6 @@ class P4
 void BenchmarkMemoryPool(size_t ntimes, size_t nworks, size_t rounds)
 {
 	std::vector<std::thread> vthread(nworks); // 线程池
-	size_t total_costtime = 0;
 	for (size_t k = 0; k < nworks; ++k) // 创建 nworks 个线程
 	{
 		vthread[k] = std::thread([&](){
@@ -51,7 +50,7 @@ void BenchmarkMemoryPool(size_t ntimes, size_t nworks, size_t rounds)
                     deleteElement<P4>(p4);
 				}
 				auto end = std::chrono::steady_clock::now();
-				total_costtime += std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+				MemoryPool_Time.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count(),std::memory_order_relaxed);
 			}
 		});
 	}
@@ -59,13 +58,12 @@ void BenchmarkMemoryPool(size_t ntimes, size_t nworks, size_t rounds)
 	{
 		t.join();
 	}
-	printf("%lu个线程并发执行%lu轮次,每轮次newElement&deleteElement %lu次,总计花费:%lu us\n", nworks, rounds, ntimes, total_costtime);
+	printf("%lu个线程并发执行%lu轮次,每轮次newElement&deleteElement %lu次,总计花费:%lu ms\n", nworks, rounds, ntimes, MemoryPool_Time.load()/1000);
 }
 
 void BenchmarkNew(size_t ntimes, size_t nworks, size_t rounds)
 {
 	std::vector<std::thread> vthread(nworks);
-	size_t total_costtime = 0;
 	for (size_t k = 0; k < nworks; ++k)
 	{
 		vthread[k] = std::thread([&]() {
@@ -84,7 +82,7 @@ void BenchmarkNew(size_t ntimes, size_t nworks, size_t rounds)
                     delete p4;
 				}
 				auto end = std::chrono::steady_clock::now();
-				total_costtime += std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+				New_Time.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count(),std::memory_order_relaxed);
 			}
 		});
 	}
@@ -92,16 +90,15 @@ void BenchmarkNew(size_t ntimes, size_t nworks, size_t rounds)
 	{
 		t.join();
 	}
-	printf("%lu个线程并发执行%lu轮次,每轮次malloc&free %lu次,总计花费:%lu us\n", nworks, rounds, ntimes, total_costtime);
+	printf("%lu个线程并发执行%lu轮次,每轮次malloc&free %lu次,总计花费:%lu ms\n", nworks, rounds, ntimes, New_Time.load()/1000);
 }
 
 int main()
 {
     MemoryBucket::initMemoryPool(); // 使用内存池接口前一定要先调用该函数
-	BenchmarkMemoryPool(10000, 1, 100); // 测试内存池
+	BenchmarkMemoryPool(10000, 5, 100); // 测试内存池
 	std::cout << "===========================================================================" << std::endl;
 	std::cout << "===========================================================================" << std::endl;
-	BenchmarkNew(10000, 1, 100); // 测试 new delete
-	
+	BenchmarkNew(10000, 5, 100); // 测试 new delete
 	return 0;
 }
