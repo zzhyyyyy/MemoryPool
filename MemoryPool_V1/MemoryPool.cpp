@@ -65,7 +65,7 @@ void MemoryPool::allocateBlock()
     (static_cast<slot*>(newBlock))->next = firstblock;
     firstblock=static_cast<slot*>(newBlock);
     //内存对齐
-    char* body = static_cast<char*>(newBlock)+sizeof(slot*);
+    char* body = static_cast<char*>(newBlock)+sizeof(slot*);//往后顺延sizeof(slot*)个字节
     size_t paddingSize = padPointer(body,Slot_size);
     curslot = reinterpret_cast<slot*>(body+paddingSize);
     lastslot = reinterpret_cast<slot*>(reinterpret_cast<size_t>(newBlock)+Block_size-Slot_size+1); 
@@ -75,7 +75,9 @@ void MemoryPool::allocateBlock()
 
 size_t MemoryPool::padPointer(char* body,size_t align)
 {
-    size_t offset = reinterpret_cast<size_t>(body) % align;
+    //size_t offset = reinterpret_cast<size_t>(body) % align;
+    void* temp = static_cast<void*>(body);
+    size_t offset = reinterpret_cast<size_t>(temp)%align;
     return offset ? (align - offset) : 0;
 }
 
